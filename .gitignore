@@ -1,0 +1,34 @@
+# Python cache files
+__pycache__/
+*.py[cod]
+*.pyo
+
+# SQLite database
+db.sqlite3
+
+# Django migrations
+*/migrations/*.pyc
+*/migrations/*.py[cod]
+
+# Virtual environment
+venv/
+pythoneksproject/
+env/
+ENV/
+
+# Django static files
+staticfiles/
+static/
+media/
+
+# Demo app folder
+demoapp/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+
+# OS files
+.DS_Store
+Thumbs.db
