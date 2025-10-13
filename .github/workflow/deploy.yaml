@@ -43,3 +43,5 @@ jobs:
           aws ecr describe-images --repository-name $ECR_REPOSITORY
         env:
           ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+
+#test
