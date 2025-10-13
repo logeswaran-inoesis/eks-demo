@@ -1,3 +1,5 @@
+
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -16,28 +18,14 @@ spec:
     spec:
       containers:
       - name: django
-(pythoneksproject) inoesis@stagingquickmeet:~/eks-demo$ kubectl get pods 
-NAME                               READY   STATUS         RESTARTS        AGE
-eks-demo-django-75f65f8488-gcx2p   0/1     ErrImagePull   0               10s
-eks-demo-django-75f65f8488-lktsf   0/1     ErrImagePull   0               10s
-postgres-64b57b5849-kmbdg          1/1     Running        1 (3m25s ago)   3d5h
-redis-b8b778f87-nd6wr              1/1     Running        1 (3m25s ago)   3d5h
-(pythoneksproject) inoesis@stagingquickmeet:~/eks-demo$ docker images
-REPOSITORY                     TAG       IMAGE ID       CREATED         SIZE
-eks-demo-django                prod      cd8c2d6110a0   5 minutes ago   273MB        ports:
+        image: 050752612531.dkr.ecr.ap-south-1.amazonaws.com/eks-demo:latest
+        ports:
         - containerPort: 8000
-        envFrom:
-        - configMapRef:
-            name: django-config
-        - secretRef:
-            name: django-secret
-        resources:
-          requests:
-            memory: "256Mi"
-            cpu: "250m"
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
+        # envFrom:
+        # - configMapRef:
+        #     name: django-config
+        # - secretRef:
+        #     name: django-secret
         livenessProbe:
           httpGet:
             path: /
@@ -50,17 +38,66 @@ eks-demo-django                prod      cd8c2d6110a0   5 minutes ago   273MB   
             port: 8000
           initialDelaySeconds: 15
           periodSeconds: 5
+        resources:
+          requests:
+            cpu: 250m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        imagePullPolicy: Always
+
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: eks-demo-django
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: eks-demo-django
   ports:
-    - protocol: TCP
-      port: 80
-      targetPort: 8000
- 
+  - protocol: TCP
+    port: 80
+    targetPort: 8000
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: eks-demo-django-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: a4e2260c123fe4cbfa9094dcf87ee142-756269258.ap-south-1.elb.amazonaws.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: eks-demo-django
+            port:
+              number: 80
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: eks-demo-django-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: eks-demo-django
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 50
