@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: eks-demo-django
+  labels:
+    app: eks-demo-django
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: eks-demo-django
+  template:
+    metadata:
+      labels:
+        app: eks-demo-django
+    spec:
+      containers:
+      - name: django
+(pythoneksproject) inoesis@stagingquickmeet:~/eks-demo$ kubectl get pods 
+NAME                               READY   STATUS         RESTARTS        AGE
+eks-demo-django-75f65f8488-gcx2p   0/1     ErrImagePull   0               10s
+eks-demo-django-75f65f8488-lktsf   0/1     ErrImagePull   0               10s
+postgres-64b57b5849-kmbdg          1/1     Running        1 (3m25s ago)   3d5h
+redis-b8b778f87-nd6wr              1/1     Running        1 (3m25s ago)   3d5h
+(pythoneksproject) inoesis@stagingquickmeet:~/eks-demo$ docker images
+REPOSITORY                     TAG       IMAGE ID       CREATED         SIZE
+eks-demo-django                prod      cd8c2d6110a0   5 minutes ago   273MB        ports:
+        - containerPort: 8000
+        envFrom:
+        - configMapRef:
+            name: django-config
+        - secretRef:
+            name: django-secret
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8000
+          initialDelaySeconds: 15
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: eks-demo-django
+spec:
+  type: LoadBalancer
+  selector:
+    app: eks-demo-django
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
+ 
